@@ -21,8 +21,17 @@ public class ThrowsCustomException {
 
 	public void InsufficientFund(Integer counter) {
 		try {
-		throw new InsufficientFundException(Thread.currentThread().getName() + " Token #" + counter + " payment failed: Insufficient fund.");
+			throw new InsufficientFundException(Thread.currentThread().getName() + " Token #" + counter + " payment failed: Insufficient fund.");
 		} catch (InsufficientFundException e) {
+			System.err.println(e.getMessage());
+		}
+
+	}
+
+	public void Error() {
+		try {
+			throw new OverEntryException(Thread.currentThread().getName() + " Too many cars in the parking lot!!!");
+		} catch (OverEntryException e) {
 			System.err.println(e.getMessage());
 		}
 

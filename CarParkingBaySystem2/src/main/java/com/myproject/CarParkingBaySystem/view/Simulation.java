@@ -10,7 +10,7 @@ import com.myproject.CarParkingBaySystem.controller.ParkingStructureOffice;
 public class Simulation {
 
 	private ParkingStructureOffice pso;
-
+	
 	public void multipleEntryGate(int parkingStructureSpaces, int gate) throws InterruptedException {
 		pso = new ParkingStructure(parkingStructureSpaces);
 		ExecutorService gates = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -26,5 +26,9 @@ public class Simulation {
 		}
 		gates.shutdown();
 		gates.awaitTermination(1, TimeUnit.MILLISECONDS);
+	}
+	
+	public void stressTestMultipleEntryGate(int parkingStructureSpaces, int gate){
+		
 	}
 }

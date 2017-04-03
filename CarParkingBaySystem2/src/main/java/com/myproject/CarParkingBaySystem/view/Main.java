@@ -4,7 +4,8 @@ public class Main {
 
 	public static void main(String[] args) throws InterruptedException {
 		
-		new Simulation().multipleEntryGate(100, 10);
+		// multiple gate entry, each gate check in 10 cars.
+		new Simulation().multipleEntryGate(100, 11);
 
 	}
 

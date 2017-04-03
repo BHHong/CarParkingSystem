@@ -8,5 +8,5 @@ public interface ParkingStructureOffice {
 
 	public void pay(Integer counter, double payment);
 	
-	public void capacityInfo();
+	public int capacityInfo();
 }
