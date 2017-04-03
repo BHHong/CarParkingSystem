@@ -1,5 +1,7 @@
 package com.myproject.CarParkingBaySystem.controller;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -8,29 +10,29 @@ import com.myproject.CarParkingBaySystem.model.ParkingToken;
 
 public class ParkingStructure implements ParkingStructureOffice {
 
-	private static Map<Integer, ParkingToken> map = new ConcurrentHashMap<>();
-
-	private int counter;
+	private static Map<Integer, ParkingToken> occupancy = new ConcurrentHashMap<>();
+	private int tokenCounter;
 	private final int totalFreeSpaces;
 
 	public ParkingStructure(int totalFreeSpaces) {
-		this.counter = 0;
+		this.tokenCounter = 0;
 		this.totalFreeSpaces = totalFreeSpaces;
 	}
 
+	@Override
 	public boolean hasSpot() {
-		return (map.size() < totalFreeSpaces);
+		return (occupancy.size() < totalFreeSpaces);
 	}
 
 	@Override
 	public void entryGate() {
 		if (hasSpot()) {
-			if (map.putIfAbsent(counter + 1, new ParkingToken(counter + 1)) == null) {
-				System.out.println(Thread.currentThread().getName() + " ENTRY GATE : Token #" + ++counter + " issued. ["
-						+ map.size() + "/" + totalFreeSpaces + "]");
-				if(map.size() > totalFreeSpaces){
+			if (occupancy.putIfAbsent(tokenCounter + 1, new ParkingToken(tokenCounter + 1)) == null) {
+				System.out.println(Thread.currentThread().getName() + " ENTRY GATE : Token #" + ++tokenCounter + " issued. ["
+						+ occupancy.size() + "/" + totalFreeSpaces + "]");
+				if(occupancy.size() > totalFreeSpaces){
 					new ThrowsCustomException().Error();
-					System.exit(1);
+					System.exit(1); // for testing purpose
 				}
 			} else {
 				System.out.println(Thread.currentThread().getName() + " Retry findSpot.");
@@ -42,32 +44,36 @@ public class ParkingStructure implements ParkingStructureOffice {
 	}
 
 	@Override
-	public void exitGate(Integer counter) {
-		if (map.get(counter).isPaid() == true) {
-			map.remove(counter);
-			System.out.println(Thread.currentThread().getName() + " EXIT GATE : Token #" + counter + " collected. ["
-					+ map.size() + "/" + totalFreeSpaces + "]");
+	public void exitGate(Integer tokenNumber) {
+		if (occupancy.get(tokenNumber).isPaid() == true) {
+			occupancy.remove(tokenNumber);
+			System.out.println(Thread.currentThread().getName() + " EXIT GATE : Token #" + tokenNumber + " collected. ["
+					+ occupancy.size() + "/" + totalFreeSpaces + "]");
 		} else {
-			new ThrowsCustomException().Unpaid(counter);
+			new ThrowsCustomException().Unpaid(tokenNumber);
 		}
 	}
 
 	@Override
-	public void pay(Integer counter, double payment) {
-		PaymentSystem paymentSystem = new PaymentSystem(map.get(counter), payment);
+	public void pay(Integer tokenNumber, double payment) {
+		PaymentSystem paymentSystem = new PaymentSystem(occupancy.get(tokenNumber), payment);
 		if (paymentSystem.isSuccessful()) {
-			map.put(counter, paymentSystem.getParkingSpace());
-			System.out.println(Thread.currentThread().getName() + " Token #" + counter
+			occupancy.put(tokenNumber, paymentSystem.getParkingSpace());
+			System.out.println(Thread.currentThread().getName() + " Token #" + tokenNumber
 					+ " payment successful. Please proceed to exit.");
 		} else {
-			new ThrowsCustomException().InsufficientFund(counter);
+			new ThrowsCustomException().InsufficientFund(tokenNumber);
 		}
 	}
 
 	@Override
 	public int capacityInfo() {
-		System.out.println((totalFreeSpaces-map.size()) + " spaces available, out of " + totalFreeSpaces);
-		return totalFreeSpaces-map.size();
+		System.out.println((totalFreeSpaces-occupancy.size()) + " spaces available, out of " + totalFreeSpaces);
+		return totalFreeSpaces-occupancy.size();
 	}
 
+	@Override
+	public List<Integer> getOccupiedInfo(){
+		return new ArrayList<Integer>(occupancy.keySet());
+	}
 }

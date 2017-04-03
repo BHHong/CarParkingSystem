@@ -1,7 +1,5 @@
 package com.myproject.CarParkingBaySystem.controller;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import com.myproject.CarParkingBaySystem.model.ParkingToken;
@@ -20,24 +18,16 @@ public class PaymentSystem {
 
 	public double getAmount(double hourlyRate) {
 		Date exitTime = new Date();
-		// for testing purpose only
-		try {
-			exitTime = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse("2017-04-03 12:00");
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		//
-		int parkedHour = (int) Math
-				.ceil((double) (exitTime.getTime() - token.getEntryTime().getTime()) / 1000 / 60 / 60);
+		int parkedHour = (int) Math.ceil((double) (exitTime.getTime() - token.getEntryTime().getTime()) / 1000 / 60 / 60);
 		double amount = parkedHour * hourlyRate;
-		System.out.println("Token #" + token.getTokenNumber() + " Entry Time : " + token.getEntryTime());
+		//System.out.println("Token #" + token.getTokenNumber() + " Entry Time : " + token.getEntryTime());
 		System.out.println("Token #" + token.getTokenNumber() + " Payment Time : " + exitTime);
 		System.out.println("Token #" + token.getTokenNumber() + " Parked up to " + parkedHour + " hour(s) : Cost GBP " + amount);
 		return amount;
 	}
 
 	public boolean isSuccessful() {
-		System.out.println("Token #" + token.getTokenNumber() + " receiving payment GBP " + payment);
+		//System.out.println("Token #" + token.getTokenNumber() + " receiving payment GBP " + payment);
 		if (payment >= getAmount(hourlyRate)) {
 			token.setPaid(true);
 			return true;
