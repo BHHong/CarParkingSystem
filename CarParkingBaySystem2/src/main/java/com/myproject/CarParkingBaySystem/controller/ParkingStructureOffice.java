@@ -7,4 +7,6 @@ public interface ParkingStructureOffice {
 	public void exitGate(Integer counter);
 
 	public void pay(Integer counter, double payment);
+	
+	public void capacityInfo();
 }

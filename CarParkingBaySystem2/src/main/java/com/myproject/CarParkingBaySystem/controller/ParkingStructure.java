@@ -12,10 +12,12 @@ public class ParkingStructure implements ParkingStructureOffice {
 
 	private int counter;
 	private int freeSpaces;
-
+	private final int totalFreeSpaces; 
+	
 	public ParkingStructure(int totalFreeSpaces) {
 		this.counter = 0;
 		this.freeSpaces = totalFreeSpaces;
+		this.totalFreeSpaces = totalFreeSpaces;
 	}
 
 	public boolean hasSpot() {
@@ -28,9 +30,9 @@ public class ParkingStructure implements ParkingStructureOffice {
 			if (map.putIfAbsent(counter + 1, new ParkingToken(counter + 1)) == null) {
 				freeSpaces--;
 				counter++;
-				System.out.println("ENTRY GATE : Token #" + counter + " issued.");
+				System.out.println(Thread.currentThread().getName() + " ENTRY GATE : Token #" + counter + " issued.");
 			} else {
-				System.out.println("Retry findSpot.");
+				System.out.println(Thread.currentThread().getName() + " Retry findSpot.");
 				entryGate();
 			}
 		} else {
@@ -43,7 +45,7 @@ public class ParkingStructure implements ParkingStructureOffice {
 		if (map.get(counter).isPaid() == true) {
 			map.remove(counter);
 			freeSpaces++;
-			System.out.println("EXIT GATE : Token #" + counter + " collected.");
+			System.out.println(Thread.currentThread().getName() + " EXIT GATE : Token #" + counter + " collected.");
 		} else {
 			new ThrowsCustomException().Unpaid(counter);
 		}
@@ -54,10 +56,16 @@ public class ParkingStructure implements ParkingStructureOffice {
 		PaymentSystem paymentSystem = new PaymentSystem(map.get(counter), payment);
 		if (paymentSystem.isSuccessful()) {
 			map.put(counter, paymentSystem.getParkingSpace());
-			System.out.println("Token #" + counter + " payment successful. Please proceed to exit.");
+			System.out.println(Thread.currentThread().getName() + " Token #" + counter + " payment successful. Please proceed to exit.");
 		} else {
 			new ThrowsCustomException().InsufficientFund(counter);
 		}
+	}
+
+	@Override
+	public void capacityInfo() {
+		System.out.println(freeSpaces + " spaces available, out of " + totalFreeSpaces);
+		
 	}
 
 }
