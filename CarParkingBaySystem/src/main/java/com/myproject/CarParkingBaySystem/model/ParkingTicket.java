@@ -26,7 +26,7 @@ public class ParkingTicket {
 		this.paidTime = paidTime;
 	}
 
-	public long getToken() {
+	public long getTicket() {
 		return ticket;
 	}
 
@@ -44,7 +44,7 @@ public class ParkingTicket {
 
 	@Override
 	public String toString() {
-		return "ParkingTicket [token=" + ticket + ", licensePlate=" + licensePlate + ", vehicleType=" + vehicleType
+		return "ParkingTicket [ticket=" + ticket + ", licensePlate=" + licensePlate + ", vehicleType=" + vehicleType
 				+ ", entryTime=" + entryTime + ", paidTime=" + paidTime + "]";
 	}
 }

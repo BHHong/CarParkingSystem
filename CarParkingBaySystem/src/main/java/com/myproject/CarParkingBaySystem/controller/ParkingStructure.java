@@ -1,5 +1,6 @@
 package com.myproject.CarParkingBaySystem.controller;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -49,14 +50,16 @@ public class ParkingStructure implements ParkingStructureOffice {
 	@Override
 	public boolean findSpot(Vehicle v) {
 		if (hasSpot(v)) {
-			if (records.putIfAbsent(v,new ParkingTicket(++ticket, v.getLicensePlate(), v.getClass().getSimpleName())) == null) {
-				System.out.println(Thread.currentThread().getName() + " Ticket #" + ticket + " issued to " + v);
+			if (records.putIfAbsent(v,
+					new ParkingTicket(++ticket, v.getLicensePlate(), v.getClass().getSimpleName())) == null) {
+				System.out.println(Thread.currentThread().getName() + " Ticket #" + ticket + " " + v + " entered.");
 				getFreeSpacesInfo();
 				return true;
 			} else {
 				new ThrowsCustomException().Duplicate(v);
 			}
 		} else {
+			getFreeSpacesInfo();
 			new ThrowsCustomException().NoSpot(v);
 		}
 		return false;
@@ -64,9 +67,11 @@ public class ParkingStructure implements ParkingStructureOffice {
 
 	@Override
 	public boolean pay(String licensePlate, double payment) {
-		ParkingTicket parkingTicket = records.get(new Car(licensePlate)) != null ? records.get(new Car(licensePlate)) : records.get(new Motorcycle(licensePlate));
+		ParkingTicket parkingTicket = records.get(new Car(licensePlate)) != null ? records.get(new Car(licensePlate))
+				: records.get(new Motorcycle(licensePlate));
 		if (paymentSystem.processPayment(parkingTicket, payment)) {
-			System.out.println(Thread.currentThread().getName() +" Ticket #" + parkingTicket.getToken() + " : Payment Successful." );
+			System.out.println(Thread.currentThread().getName() + " Ticket #" + parkingTicket.getTicket()
+					+ " Payment Successful.");
 			return true;
 		}
 		return false;
@@ -75,16 +80,21 @@ public class ParkingStructure implements ParkingStructureOffice {
 	@Override
 	public boolean freeSpot(Vehicle v) {
 		if (records.get(v).getPaidTime() != null) {
-			System.out.println(Thread.currentThread().getName() + " Ticket #" + records.get(v).getToken() + " collected.");
-			records.remove(v);
-			getFreeSpacesInfo();
-			return true;
+			if(new Date().getTime() - records.get(v).getPaidTime().getTime() <= 15*60*1000){
+				System.out.println(Thread.currentThread().getName() + " Ticket #" + records.get(v).getTicket() + " " + v + " left.");
+				records.remove(v);
+				getFreeSpacesInfo();
+				return true;
+			} else {
+				new ThrowsCustomException().ExitTimeOut(records.get(v));
+			}
 		} else {
 			new ThrowsCustomException().Unpaid(v);
 		}
 		return false;
 	}
 
+	@Override
 	public void getFreeSpacesInfo() {
 		int totalMotorcycleFound = 0;
 		int totalCarFound = 0;
@@ -95,8 +105,9 @@ public class ParkingStructure implements ParkingStructureOffice {
 				totalCarFound++;
 			}
 		}
-		System.out.println(Thread.currentThread().getName()+" Free spaces: Motorcycle [" + (totalMotorcycleSpaces - totalMotorcycleFound) + "/"
-				+ totalMotorcycleSpaces + "], Car [" + (totalCarSpaces - totalCarFound) + "/" + totalCarSpaces + "]");
+		System.out.println(Thread.currentThread().getName() + " Free spaces: Motorcycle ["
+				+ (totalMotorcycleSpaces - totalMotorcycleFound) + "/" + totalMotorcycleSpaces + "], Car ["
+				+ (totalCarSpaces - totalCarFound) + "/" + totalCarSpaces + "]");
 	}
 
 }
