@@ -18,6 +18,7 @@ public class ParkingStructure implements ParkingStructureOffice {
 	private final int totalMotorcycleSpaces;
 	private final int totalCarSpaces;
 	private PaymentSystem paymentSystem;
+	private int exitTimeOutMinutes = 20;
 
 	public ParkingStructure(int totalMotorcycleSpaces, double motorcycleHourlyRate, int totalCarSpaces,
 			double carHourlyRate) {
@@ -28,31 +29,26 @@ public class ParkingStructure implements ParkingStructureOffice {
 	}
 
 	@Override
-	public boolean hasSpot(Vehicle v) {
-		int totalSpaces = v.getClass().getSimpleName().equals("Car") ? totalCarSpaces
-				: v.getClass().getSimpleName().equals("Motorcycle") ? totalMotorcycleSpaces : 0;
-		if (getOccupancies(v.getClass().getSimpleName()) < totalSpaces) {
+	public boolean hasSpot(Class<? extends Vehicle> vehicleClass) {
+		if (getOccupancies(vehicleClass) < (vehicleClass == Car.class ? totalCarSpaces
+				: vehicleClass == Motorcycle.class ? totalMotorcycleSpaces : 0)) {
 			return true;
 		}
 		return false;
 	}
 
-	public int getOccupancies(String vehicleType) {
-		int totalFound = 0;
-		for (Vehicle v : records.keySet()) {
-			if (v.getClass().getSimpleName().equals(vehicleType)) {
-				totalFound++;
-			}
-		}
-		return totalFound;
+	@Override
+	public int getOccupancies(Class<? extends Vehicle> vehicleClass) {
+		return (int) records.keySet().stream().filter(key -> key.getClass() == vehicleClass).count();
 	}
 
 	@Override
 	public boolean findSpot(Vehicle v) {
-		if (hasSpot(v)) {
+		if (hasSpot(v.getClass())) {
 			if (records.putIfAbsent(v,
 					new ParkingTicket(++ticket, v.getLicensePlate(), v.getClass().getSimpleName())) == null) {
-				System.out.println(Thread.currentThread().getName() + " Ticket #" + ticket + " " + v + " entered.");
+				System.out.println(Thread.currentThread().getName() 
+						+ " Ticket #" + records.get(v).getTicket() + " " + v + " entered.");
 				getFreeSpacesInfo();
 				return true;
 			} else {
@@ -67,11 +63,11 @@ public class ParkingStructure implements ParkingStructureOffice {
 
 	@Override
 	public boolean pay(String licensePlate, double payment) {
-		ParkingTicket parkingTicket = records.get(new Car(licensePlate)) != null ? records.get(new Car(licensePlate))
-				: records.get(new Motorcycle(licensePlate));
+		ParkingTicket parkingTicket = records.get(new Car(licensePlate)) != null ? 
+				records.get(new Car(licensePlate)) : records.get(new Motorcycle(licensePlate));
 		if (paymentSystem.processPayment(parkingTicket, payment)) {
-			System.out.println(Thread.currentThread().getName() + " Ticket #" + parkingTicket.getTicket()
-					+ " Payment Successful.");
+			System.out.println(Thread.currentThread().getName() 
+					+ " Ticket #" + parkingTicket.getTicket() + " Payment Successful.");
 			return true;
 		}
 		return false;
@@ -80,8 +76,9 @@ public class ParkingStructure implements ParkingStructureOffice {
 	@Override
 	public boolean freeSpot(Vehicle v) {
 		if (records.get(v).getPaidTime() != null) {
-			if(new Date().getTime() - records.get(v).getPaidTime().getTime() <= 15*60*1000){
-				System.out.println(Thread.currentThread().getName() + " Ticket #" + records.get(v).getTicket() + " " + v + " left.");
+			if (new Date().getTime() - records.get(v).getPaidTime().getTime() <= exitTimeOutMinutes * 60 * 1000) {
+				System.out.println(Thread.currentThread().getName() 
+						+ " Ticket #" + records.get(v).getTicket() + " " + v + " left.");
 				records.remove(v);
 				getFreeSpacesInfo();
 				return true;
@@ -96,18 +93,9 @@ public class ParkingStructure implements ParkingStructureOffice {
 
 	@Override
 	public void getFreeSpacesInfo() {
-		int totalMotorcycleFound = 0;
-		int totalCarFound = 0;
-		for (Vehicle v : records.keySet()) {
-			if (v.getClass().getSimpleName().equals("Motorcycle")) {
-				totalMotorcycleFound++;
-			} else if (v.getClass().getSimpleName().equals("Car")) {
-				totalCarFound++;
-			}
-		}
 		System.out.println(Thread.currentThread().getName() + " Free spaces: Motorcycle ["
-				+ (totalMotorcycleSpaces - totalMotorcycleFound) + "/" + totalMotorcycleSpaces + "], Car ["
-				+ (totalCarSpaces - totalCarFound) + "/" + totalCarSpaces + "]");
+				+ (totalMotorcycleSpaces - getOccupancies(Motorcycle.class)) + "/" + totalMotorcycleSpaces + "], Car ["
+				+ (totalCarSpaces - getOccupancies(Car.class)) + "/" + totalCarSpaces + "]");
 	}
 
 }
