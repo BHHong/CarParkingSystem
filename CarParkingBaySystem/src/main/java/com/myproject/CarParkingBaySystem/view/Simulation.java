@@ -16,7 +16,7 @@ public class Simulation {
 
 	// create parking structure (total motorcycle spaces, motorcycle hourly
 	// rate, total car spaces, car hourly rate)
-	private ParkingStructureOffice pso = new ParkingStructure(10, 1.11, 15, 2.22);
+	private ParkingStructureOffice pso = new ParkingStructure(10, 1.11, 10, 2.22);
 
 	public void singleGate(int trial) throws InterruptedException {
 		// create license plates for cars and motorcycles
@@ -77,18 +77,18 @@ public class Simulation {
 					}
 				}
 			}
-			//Thread.sleep(100);
+			//Thread.sleep(1000);
 		}
 	}
 
-	public void multiGate(int gate) throws InterruptedException {
+	public void multiGate(int gate, int trialPerGate) throws InterruptedException {
 		ExecutorService es = Executors.newFixedThreadPool(gate);
 		for (int i = 0; i < gate; i++) {
 			es.submit(new Runnable() {
 				@Override
 				public void run() {
 					try {
-						new Simulation().singleGate(50);
+						new Simulation().singleGate(trialPerGate);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -96,7 +96,8 @@ public class Simulation {
 			});
 		}
 		es.shutdown();
-		es.awaitTermination(1, TimeUnit.MINUTES);
+		es.awaitTermination(1, TimeUnit.HOURS);
+		pso.resetDatabase();
 	}
 
 	private StringBuilder sb;

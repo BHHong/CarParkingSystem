@@ -56,4 +56,12 @@ public class ThrowsCustomException {
 			System.err.println(e.getMessage());
 		}
 	}
+
+	public void Error() {
+		try {
+			throw new ErrorException(Thread.currentThread().getName()+ " Error!!!");
+		} catch (ErrorException e) {
+			System.err.println(e.getMessage());
+		}		
+	}
 }

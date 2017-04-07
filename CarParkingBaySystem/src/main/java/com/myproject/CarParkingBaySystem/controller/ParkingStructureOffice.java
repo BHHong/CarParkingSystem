@@ -15,4 +15,6 @@ public interface ParkingStructureOffice {
 	public boolean pay(String licensePlate, double payment);
 
 	public void getFreeSpacesInfo();
+
+	public void resetDatabase();
 }

@@ -28,11 +28,7 @@ public class PaymentSystem {
 
 	public double getAmount(ParkingTicket parkingTicket) {
 		Date payTime = new Date();
-		int parkedHour = (int) Math
-				.ceil((double) (payTime.getTime() - parkingTicket.getEntryTime().getTime()) / 1000 / 60 / 60);
-		if (parkedHour == 0) {
-			parkedHour = 1;
-		}
+		int parkedHour = (int) Math.ceil((double) (payTime.getTime() - parkingTicket.getEntryTime().getTime() +1) / 1000 / 60 / 60);
 		double rate = parkingTicket.getVehicleType().equals("Car") ? carHourlyRate
 				: parkingTicket.getVehicleType().equals("Motorcycle") ? motorcycleHourlyRate : 10000;
 		double amount = parkedHour * rate;

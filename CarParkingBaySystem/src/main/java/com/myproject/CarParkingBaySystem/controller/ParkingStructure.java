@@ -1,6 +1,7 @@
 package com.myproject.CarParkingBaySystem.controller;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,17 +13,16 @@ import com.myproject.CarParkingBaySystem.model.Vehicle;
 
 public class ParkingStructure implements ParkingStructureOffice {
 
-	private static Map<Vehicle, ParkingTicket> records = new ConcurrentHashMap<>();
-	private static long ticket;
+	private static Map<Vehicle, ParkingTicket> records = new HashMap<>();
+	private static long ticket = 0;
 
+	private PaymentSystem paymentSystem;
 	private final int totalMotorcycleSpaces;
 	private final int totalCarSpaces;
-	private PaymentSystem paymentSystem;
 	private int exitTimeOutMinutes = 20;
 
 	public ParkingStructure(int totalMotorcycleSpaces, double motorcycleHourlyRate, int totalCarSpaces,
 			double carHourlyRate) {
-		this.ticket = 0;
 		this.totalMotorcycleSpaces = totalMotorcycleSpaces;
 		this.totalCarSpaces = totalCarSpaces;
 		this.paymentSystem = new PaymentSystem(motorcycleHourlyRate, carHourlyRate);
@@ -30,8 +30,8 @@ public class ParkingStructure implements ParkingStructureOffice {
 
 	@Override
 	public boolean hasSpot(Class<? extends Vehicle> vehicleClass) {
-		if (getOccupancies(vehicleClass) < (vehicleClass == Car.class ? totalCarSpaces
-				: vehicleClass == Motorcycle.class ? totalMotorcycleSpaces : 0)) {
+		if (getOccupancies(vehicleClass) < (vehicleClass.equals(Car.class) ? totalCarSpaces
+				: vehicleClass.equals(Motorcycle.class) ? totalMotorcycleSpaces : 0)) {
 			return true;
 		}
 		return false;
@@ -44,30 +44,27 @@ public class ParkingStructure implements ParkingStructureOffice {
 
 	@Override
 	public boolean findSpot(Vehicle v) {
-		if (hasSpot(v.getClass())) {
-			if (records.putIfAbsent(v,
-					new ParkingTicket(++ticket, v.getLicensePlate(), v.getClass().getSimpleName())) == null) {
-				System.out.println(Thread.currentThread().getName() 
-						+ " Ticket #" + records.get(v).getTicket() + " " + v + " entered.");
+		synchronized (records) {
+			if (hasSpot(v.getClass())) {
+				records.put(v,new ParkingTicket(++ticket, v.getLicensePlate(), v.getClass().getSimpleName()));
+				System.out.println(Thread.currentThread().getName() + " Ticket #" + records.get(v).getTicket() + " " + v + " entered."); 
 				getFreeSpacesInfo();
 				return true;
 			} else {
-				new ThrowsCustomException().Duplicate(v);
+				getFreeSpacesInfo();
+				new ThrowsCustomException().NoSpot(v);
 			}
-		} else {
-			getFreeSpacesInfo();
-			new ThrowsCustomException().NoSpot(v);
+			return false;
 		}
-		return false;
 	}
 
 	@Override
 	public boolean pay(String licensePlate, double payment) {
-		ParkingTicket parkingTicket = records.get(new Car(licensePlate)) != null ? 
-				records.get(new Car(licensePlate)) : records.get(new Motorcycle(licensePlate));
+		ParkingTicket parkingTicket = records.get(new Car(licensePlate)) != null ? records.get(new Car(licensePlate))
+				: records.get(new Motorcycle(licensePlate));
 		if (paymentSystem.processPayment(parkingTicket, payment)) {
-			System.out.println(Thread.currentThread().getName() 
-					+ " Ticket #" + parkingTicket.getTicket() + " Payment Successful.");
+			System.out.println(Thread.currentThread().getName() + " Ticket #" + parkingTicket.getTicket()
+					+ " Payment Successful.");
 			return true;
 		}
 		return false;
@@ -77,8 +74,8 @@ public class ParkingStructure implements ParkingStructureOffice {
 	public boolean freeSpot(Vehicle v) {
 		if (records.get(v).getPaidTime() != null) {
 			if (new Date().getTime() - records.get(v).getPaidTime().getTime() <= exitTimeOutMinutes * 60 * 1000) {
-				System.out.println(Thread.currentThread().getName() 
-						+ " Ticket #" + records.get(v).getTicket() + " " + v + " left.");
+				System.out.println(Thread.currentThread().getName() + " Ticket #" + records.get(v).getTicket() + " " + v
+						+ " left.");
 				records.remove(v);
 				getFreeSpacesInfo();
 				return true;
@@ -93,9 +90,19 @@ public class ParkingStructure implements ParkingStructureOffice {
 
 	@Override
 	public void getFreeSpacesInfo() {
-		System.out.println(Thread.currentThread().getName() + " Free spaces: Motorcycle ["
-				+ (totalMotorcycleSpaces - getOccupancies(Motorcycle.class)) + "/" + totalMotorcycleSpaces + "], Car ["
-				+ (totalCarSpaces - getOccupancies(Car.class)) + "/" + totalCarSpaces + "]");
+		int mFreeSpace = (totalMotorcycleSpaces - getOccupancies(Motorcycle.class));
+		int cFreeSpace = (totalCarSpaces - getOccupancies(Car.class));
+		System.out.println(Thread.currentThread().getName() + " Free spaces: Motorcycle [" + mFreeSpace + "/"
+				+ totalMotorcycleSpaces + "], Car [" + cFreeSpace + "/" + totalCarSpaces + "]");
+		if (mFreeSpace < 0 || cFreeSpace < 0) {
+			new ThrowsCustomException().Error();
+			System.exit(1);
+		}
+	}
+
+	@Override
+	public void resetDatabase() {
+		records = new HashMap<>();
 	}
 
 }
